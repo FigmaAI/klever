@@ -262,7 +262,7 @@ async function createElemList(
   }
 
   // 'FRAME', 'INSTANCE', 'COMPONENT' 타입의 노드를 처리합니다.
-  if (['FRAME', 'INSTANCE', 'COMPONENT', 'GROUP'].includes(node.type)) {
+  if (['FRAME', 'INSTANCE', 'COMPONENT'].includes(node.type)) {
     const { x, y, width, height } = node.absoluteBoundingBox;
     elemList.push({
       id: node.id,
@@ -276,10 +276,10 @@ async function createElemList(
       },
     });
 
-    // 'COMPONENT'와 'INSTANCE' 타입의 노드는 자식 노드를 탐색하지 않습니다.
-    if (node.type === 'COMPONENT' || node.type === 'INSTANCE') {
-      return elemList;
-    }
+    // // 'COMPONENT'와 'INSTANCE' 타입의 노드는 자식 노드를 탐색하지 않습니다.
+    // if (node.type === 'COMPONENT' || node.type === 'INSTANCE') {
+    //   return elemList;
+    // }
   }
 
   // 'GROUP' 타입의 노드 또는 'FRAME' 타입의 노드의 자식을 탐색합니다.
@@ -334,8 +334,9 @@ async function createLabeledImageFrame(
     elemFrame.primaryAxisSizingMode = 'AUTO';
     elemFrame.counterAxisSizingMode = 'AUTO';
     // bbox의 정 가운데에 위치하도록 x, y 값을 조정
-    elemFrame.x = elem.bbox.x;
-    elemFrame.y = elem.bbox.y;
+    elemFrame.x = elem.bbox.x + elem.bbox.width / 2 - 8;
+    elemFrame.y = elem.bbox.y + elem.bbox.height / 2 - 8;
+    
 
     // 번호를 표시하는 텍스트 생성 및 프레임에 추가
     const textNode = figma.createText();
