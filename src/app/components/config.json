@@ -1,0 +1,12 @@
+{
+  "MODEL": "Azure",
+  "OPENAI_API_BASE": "https://public-api.grabgpt.managed.catwalk-k8s.stg-myteksi.com/v1/chat/completions",
+  "OPENAI_API_KEY": "db171cd6-59de-4a92-af75-4e7415fd0b4c",
+  "OPENAI_API_MODEL": "gpt-4o",
+  "MAX_TOKENS": 300,
+  "TEMPERATURE": 0.0,
+  "REQUEST_INTERVAL": 10,
+  "DOC_REFINE": false,
+  "MAX_ROUNDS": 20,
+  "MIN_DIST": 30
+}

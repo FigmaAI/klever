@@ -1,22 +1,33 @@
 {
-  "name": "figma-plugin-react-template",
+  "name": "instant-ut-by-appagent",
   "version": "1.0.0",
-  "description": "This plugin template uses Typescript. If you are familiar with Javascript, Typescript will look very familiar. In fact, valid Javascript code is already valid Typescript code.",
+  "description": "This Figma plugin serves as a tool for providing useavility testing reports for your Figma design within fingertips.",
   "license": "ISC",
   "scripts": {
     "build": "webpack --mode=production",
     "build:watch": "webpack --mode=development --watch",
-    "prettier:format": "prettier --write '**/*.{js,jsx,ts,tsx,css,json}' "
+    "prettier:format": "prettier --write '**/*.{js,jsx,ts,tsx,css,json}' ",
+    "lint": "eslint --ext .ts,.tsx --ignore-pattern node_modules .",
+    "lint:fix": "eslint --ext .ts,.tsx --ignore-pattern node_modules --fix ."
   },
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/icons-material": "^5.15.19",
+    "@mui/material": "^5.15.19",
+    "openai": "^4.48.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@figma/eslint-plugin-figma-plugins": "^0.15.0",
     "@figma/plugin-typings": "^1.50.0",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
     "css-loader": "^6.7.1",
+    "eslint": "^9.3.0",
     "html-webpack-plugin": "^5.5.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
@@ -24,7 +35,7 @@
     "react-dev-utils": "^12.0.1",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.3.1",
-    "typescript": "^4.7.4",
+    "typescript": "^5.3.2",
     "url-loader": "^4.1.1",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0"
@@ -36,8 +47,7 @@
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,css,json}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }
