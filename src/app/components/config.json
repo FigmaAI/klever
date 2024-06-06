@@ -1,7 +1,7 @@
 {
-  "MODEL": "Azure",
-  "OPENAI_API_BASE": "https://public-api.grabgpt.managed.catwalk-k8s.stg-myteksi.com/v1/chat/completions",
-  "OPENAI_API_KEY": "db171cd6-59de-4a92-af75-4e7415fd0b4c",
+  "MODEL": "OpenAI",
+  "OPENAI_API_BASE": "https://api.openai.com/v1/chat/completions",
+  "OPENAI_API_KEY": "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",
   "OPENAI_API_MODEL": "gpt-4o",
   "MAX_TOKENS": 300,
   "TEMPERATURE": 0.0,

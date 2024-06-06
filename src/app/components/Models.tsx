@@ -29,20 +29,20 @@ class OpenAIModel {
             {
                 role: 'system',
                 content: [{
-                    type: 'text',
-                    text: prompt
+                    'type': 'text',
+                    'text': prompt
                 }],
 
             },
-            ...images.map((image) => ({
+            {
                 role: 'user',
-                content: [{
-                    type: 'image_url',
-                    image_url: {
-                        url: `data:image/jpeg;base64,${image}`,
-                    },
-                }],
-            })),
+                content: images.map((image) => ({
+                    'type': 'image_url',
+                    'image_url': {
+                        'url': `data:image/jpeg;base64,${image}`,
+                    }
+                }))
+            },
         ];
 
         // 요청 페이로드
@@ -59,7 +59,7 @@ class OpenAIModel {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
-                    'content-type': 'application/json',
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${this.api_key}`,
                 },
                 body: JSON.stringify(payload),
@@ -109,15 +109,15 @@ class AzureModel {
                 }],
 
             },
-            ...images.map((image) => ({
+            {
                 role: 'user',
-                content: [{
-                    type: 'image_url',
-                    image_url: {
+                content: images.map((image) => ({
+                    type: "image_url",
+                    imageUrl: {
                         url: `data:image/jpeg;base64,${image}`,
-                    },
-                }],
-            })),
+                    }
+                }))
+            },
         ];
 
         console.log(content);
