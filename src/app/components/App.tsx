@@ -1,10 +1,7 @@
 import React from 'react';
-import { Typography, TextField, Button, IconButton, Box, Card, CardContent, CardMedia } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings'; 
-
-import {createPromptForTask } from './Prompts';
-import {createModelInstance} from './Models'; 
-import config from './config.json';
+import { Typography, TextField, IconButton, Box, Card, CardContent, CardMedia } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const uint8ArrayToObjectURL = (data: Uint8Array): string => {
   return URL.createObjectURL(new Blob([data], { type: 'image/png' }));
@@ -17,64 +14,50 @@ const App = () => {
   const [taskName, setTaskName] = React.useState<string>('');
   const [taskDesc, setTaskDesc] = React.useState<string>('');
   const [personaDesc, setPersonaDesc] = React.useState<string>('General User Persona');
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    // set model instance
-      const modelInstance = createModelInstance(config);
+    window.onmessage = (event) => {
+      const { type, message } = event.data.pluginMessage;
+      if (type === 'nodeInfo') {
+        console.log(message);
 
-      window.onmessage = (event) => {
-        const { type, message } = event.data.pluginMessage;
-        if (type === 'nodeInfo') {
-          console.log(message);
-
-          setImageUrl(uint8ArrayToObjectURL(message.imageData));
-          setName(message.name);
-          setNodeId(message.id);
-          setTaskName(message.taskName);
-        }
-        if (type === 'clear') {
-          setImageUrl('');
-          setName('');
-          setNodeId('');
-          setTaskName('');
-        }
-        if (type === 'callGPTModel') {
-          const {imageBase64, taskFrameId} = message;
-
-          // prompt 생성
-          const prompt = createPromptForTask(taskDesc, personaDesc);
-
-          // GPT 모델 호출
-          modelInstance.get_model_response(prompt, [imageBase64])
-            .then((response) => {
-              console.log('GPT Model response:', response);
-
-              // Figma 플러그인으로 응답 전송
-              parent.postMessage({ pluginMessage: { type: 'gptResponse', data: { response, taskFrameId } } }, '*');
-            });
-        }
-      };
-
-    }, [taskDesc, personaDesc]);
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      // personaDesc가 기본값일 경우 제외
-      const postData = {
-        nodeId,
-        taskName,
-        taskDesc,
-        personaDesc: personaDesc !== 'General User Persona' ? personaDesc : undefined,
-      };
-
-      console.log('Submitted:', postData);
-      // Figma plugin으로 postData 전송 로직...
-      parent.postMessage({ pluginMessage: { type: 'submit', data: postData } }, '*');
+        setImageUrl(uint8ArrayToObjectURL(message.imageData));
+        setName(message.name);
+        setNodeId(message.id);
+        setTaskName(message.taskName);
+      }
+      if (type === 'clear') {
+        setImageUrl('');
+        setName('');
+        setNodeId('');
+        setTaskName('');
+      }
+      if (type === 'loading') {
+        setLoading(message);
+      }
     };
+  }, [taskDesc, personaDesc]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // personaDesc가 기본값일 경우 제외
+    const postData = {
+      nodeId,
+      taskName,
+      taskDesc,
+      personaDesc: personaDesc !== 'General User Persona' ? personaDesc : undefined,
+    };
+
+    // Figma plugin으로 postData 전송 로직...
+    parent.postMessage({ pluginMessage: { type: 'submit', data: postData } }, '*');
+  };
 
   // submit button activation condition: taskDesc is not empty + nodeId is not empty
 
-const isEligible = taskDesc && nodeId;
+  const isEligible = taskDesc && nodeId;
 
   return (
     <Box
@@ -124,6 +107,7 @@ const isEligible = taskDesc && nodeId;
           value={taskDesc}
           onChange={(e) => setTaskDesc(e.target.value)}
           required
+          disabled={loading}
         />
         <TextField
           id="persona_desc"
@@ -139,15 +123,17 @@ const isEligible = taskDesc && nodeId;
         />
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2 }}>
-        <Button
+        <LoadingButton
+          loading={loading} 
+          loadingIndicator="Loading…"
           variant="contained"
           color="primary"
           sx={{ borderRadius: '16px', flexGrow: 1, mr: 1 }}
           onClick={handleSubmit}
-          disabled={isEligible ? false : true}
+          disabled={!isEligible}
         >
           Start Testing
-        </Button>
+        </LoadingButton>
         <IconButton aria-label="settings" sx={{ ml: 1 }}>
           <SettingsIcon />
         </IconButton>
