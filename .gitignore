@@ -1,5 +1,6 @@
 node_modules
 dist
 settings.json
+/src/plugin/config.json
 yarn-error.log
 .vscode
