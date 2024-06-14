@@ -1,6 +1,6 @@
 {
-  "name": "Instant UT by AppAgent",
-  "id": "1377880525174198286",
+  "name": "Klever - UI assessment by AI Agent",
+  "id": "1383457529531594701",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
@@ -8,7 +8,7 @@
   "enableProposedApi": false,
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["https://placehold.co/", "https://api.openai.com"],
+    "allowedDomains": ["https://api.openai.com"],
     "reasoning": "Acceess openai API."
   },
   "permissions": ["payments"]

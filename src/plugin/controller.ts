@@ -21,29 +21,14 @@ interface UIElement {
   bbox: { x: number; y: number; width: number; height: number };
 }
 
-const init = async () => {
-  try {
-    const usageCount = await getUsageCount();
-    figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
-
-    // after delay,
-    setTimeout(async () => {
-      figma.ui.postMessage({ type: 'credits', message: usageCount });
-    }, 1000);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-};
-
-init();
+figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
+checkTrialAndInitiatePayment();
 
 figma.on('selectionchange', async () => {
   const node = figma.currentPage.selection[0];
 
   if (node) {
     if ('layoutMode' in node && node.type === 'FRAME' && node.layoutMode !== 'HORIZONTAL') {
-      // const image = await node.exportAsync({ format: 'PNG' });
-
       figma.ui.postMessage({
         type: 'nodeInfo',
         message: {
@@ -146,9 +131,6 @@ const generateReport = async (postData: PostData) => {
       console.error(error);
       figma.notify('Failed to get response from OpenAI');
     });
-
-  // Adjust viewport focus
-  // figma.viewport.scrollAndZoomIntoView([utReportsFrame]);
 };
 
 // 폰트 로드 함수
@@ -663,43 +645,29 @@ function createSpeechBubble(selectedElem: UIElement, text: string): FrameNode {
   return bubble;
 }
 
-async function getUsageCount() {
-  let usageCount = await figma.clientStorage.getAsync('usage-count');
-  if (usageCount === undefined) {
-    usageCount = 10;
-    await figma.clientStorage.setAsync('usage-count', usageCount);
+async function checkTrialAndInitiatePayment() {
+  if (figma.payments.status.type === 'PAID') {
+    // 사용자가 이미 결제를 완료한 경우
+    figma.ui.postMessage({ type: 'userStatus', message: 'PAID' });
+  } else {
+    const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
+    const secondsSinceFirstRun = figma.payments.getUserFirstRanSecondsAgo();
+    const daysSinceFirstRun = secondsSinceFirstRun / ONE_DAY_IN_SECONDS;
+    if (daysSinceFirstRun > 3) {
+      // 트라이얼 기간이 종료된 경우
+      await figma.payments.initiateCheckoutAsync({ interstitial: 'TRIAL_ENDED' });
+      // 결제 상태를 다시 확인
+      if (figma.payments.status.type === 'UNPAID') {
+        figma.ui.postMessage({ type: 'userStatus', message: { status: 'TRIAL_ENDED' } });
+      } else {
+        figma.ui.postMessage({ type: 'userStatus', message: { status: 'PAID' } });
+      }
+    } else {
+      // 트라이얼 기간 중인 경우
+      figma.ui.postMessage({ type: 'userStatus', message: { status: 'IN_TRIAL', trialDays: 3 - daysSinceFirstRun } });
+    }
   }
-  return usageCount;
 }
-
-// async function decrementUsageCount() {
-//   let usageCount = await getUsageCount();
-//   usageCount--;
-//   await figma.clientStorage.setAsync('usage-count', usageCount);
-//   return usageCount;
-// }
-
-// async function initiateCheckout() {
-//   await figma.payments.initiateCheckoutAsync({
-//     interstitial: 'TRIAL_ENDED',
-//   });
-// }
-
-// async function checkAndRunPluginFeatureCode() {
-//   let usageCount = await getUsageCount();
-
-//   if (usageCount === 0) {
-//     if (figma.payments.status.type === 'UNPAID') {
-//       await initiateCheckout();
-//       if (figma.payments.status.type === 'UNPAID') {
-//         figma.notify('You have run out of free usages of this plugin.');
-//         return;
-//       }
-//     }
-//   } else {
-//     usageCount = await decrementUsageCount();
-//   }
-// }
 
 // Error message handler 함수
 function errorMessageHandler(errorMessage: string) {
@@ -713,7 +681,7 @@ figma.ui.onmessage = (msg) => {
     console.log('Received from UI:', postData);
 
     // UT 리포트 생성 함수 호출
-    generateReport(postData).catch(console.error);
+    generateReport(postData);
   }
 
   if (msg.type === 'moveFocus') {

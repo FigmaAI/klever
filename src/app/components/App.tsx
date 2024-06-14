@@ -21,8 +21,8 @@ const App = () => {
   const [reportNode, setReportNode] = React.useState<string>('');
   const [loading, setLoading] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState<boolean>(false);
-
-  // const [credits, setCredits] = React.useState<number>(0); // Add this line to manage credits state
+  const [userStatus, setUserStatus] = React.useState('');
+  const [trialDays, setTrialDays] = React.useState<number>(0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,9 +31,8 @@ const App = () => {
     // create a task name with the current timestamp
     const demoTimestamp = new Date();
 
-    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${
-      demoTimestamp.getMonth() + 1
-    }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
+    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${demoTimestamp.getMonth() + 1
+      }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
 
     // personaDesc가 기본값일 경우 제외
     const postData = {
@@ -56,7 +55,7 @@ const App = () => {
 
   // submit button activation condition: taskDesc is not empty + nodeId is not empty
 
-  const isEligible = taskDesc && taskNode;
+  const isEligible = taskDesc && taskNode && (userStatus === 'PAID' || userStatus === 'IN_TRIAL');
 
   // 버튼을 클릭했을 때, 만약 node ID가 있다면 controller로 해당 nodeID와 함께 moveFocus 타입 메시지를 보내고, 없다면 console에 에러 메시지를 출력합니다.
   const handleNodeClick = (nodeId: string) => {
@@ -80,12 +79,28 @@ const App = () => {
       if (type === 'loading') {
         setLoading(message);
       }
-      if (type === 'credits') {
-        console.log('here', message);
-        // setCredits(message); // Add this line to update credits state
-      }
       if (type === 'reportNode') {
         setReportNode(message);
+      }
+      if (type === 'userStatus') {
+        switch (message.status) {
+          case 'PAID':
+            // 결제 완료 상태 UI 처리
+            setUserStatus(message.status);
+
+            break;
+          case 'TRIAL_ENDED':
+            // 트라이얼 기간 종료 및 결제 유도 UI 처리
+            setUserStatus(message.status);
+            setTrialDays(0)
+            break;
+          case 'IN_TRIAL':
+            // 트라이얼 기간 중 UI 처리
+            setUserStatus(message.status);
+            setTrialDays(message.trialDays);
+
+            break;
+        }
       }
     };
   }, []);
@@ -95,7 +110,7 @@ const App = () => {
       <Textarea
         placeholder={
           taskNode
-            ? `Please enter the description of the task you want me on \"${nodeName}\" to complete in a few sentences:`
+            ? `Please enter the description of the task you want me on \"${nodeName}\" to complete in a few sentences.\nOnce done, click 'Submit' or press 'Cmd/Ctrl + Enter'`
             : 'Select a frame or component to start testing'
         }
         disabled={!taskNode}
@@ -120,7 +135,10 @@ const App = () => {
               📝 Report
             </Button>
             <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }}>
-              See all
+              
+              {userStatus === 'PAID' && `💳 Paid`} 
+              {userStatus === 'IN_TRIAL' && `⏳ ${trialDays} days left`}
+              {userStatus === 'TRIAL_ENDED' && `🔒 Trial Ended`}
             </Button>
           </Box>
         }
@@ -139,10 +157,11 @@ const App = () => {
               variant="plain"
               color="neutral"
               onClick={() => setModalOpen(true)}
+              disabled={isEligible ? false : true}
               startDecorator={<FaceRetouchingNatural fontSize="small" />}
             >
               {/* if persona is empty, Button label is "Persona". If set use persona text and truncate the text */}
-              {personaDesc ? personaDesc.length > 12 ? `${personaDesc.slice(0, 12)}...` : personaDesc : 'Persona'}
+              {personaDesc ? (personaDesc.length > 12 ? `${personaDesc.slice(0, 12)}...` : personaDesc) : 'Persona'}
             </Button>
 
             <Button
@@ -184,7 +203,7 @@ const App = () => {
               <DialogActions>
                 <Button
                   color="primary"
-                  variant='soft'
+                  variant="soft"
                   onClick={() => {
                     setModalOpen(false);
                   }}
