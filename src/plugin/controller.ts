@@ -2,18 +2,18 @@ import { createModelInstance } from './Models';
 import { createPromptForTask } from './Prompts';
 import config from './config.json';
 
-// 모델 인스턴스 생성
+// Create model instance
 const modelInstance = createModelInstance(config);
 
-// postData 인터페이스 정의
+// Define postData interface
 interface PostData {
   nodeId: string;
   taskName: string;
   taskDesc: string;
-  personaDesc?: string; // personaDesc는 선택적 속성입니다.
+  personaDesc?: string; // personaDesc is an optional attribute.
 }
 
-// UIElement 인터페이스 정의
+// Define UIElement interface
 interface UIElement {
   id: string;
   type: string;
@@ -21,35 +21,38 @@ interface UIElement {
   bbox: { x: number; y: number; width: number; height: number };
 }
 
-// Figma 플러그인의 나머지 부분
-figma.showUI(__html__, { width: 360 + 64, height: 640 + 64 });
+const init = async () => {
+  try {
+    const usageCount = await getUsageCount();
+    figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
+
+    // after delay,
+    setTimeout(async () => {
+      figma.ui.postMessage({ type: 'credits', message: usageCount });
+    }, 1000);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
+
+init();
 
 figma.on('selectionchange', async () => {
   const node = figma.currentPage.selection[0];
 
   if (node) {
     if ('layoutMode' in node && node.type === 'FRAME' && node.layoutMode !== 'HORIZONTAL') {
-      const image = await node.exportAsync({ format: 'PNG' });
-
-      // 현재 시간을 기준으로 task_name 생성
-      const demoTimestamp = new Date();
-      const taskName = `self_explore_${demoTimestamp.getFullYear()}-${demoTimestamp.getMonth() + 1
-        }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
+      // const image = await node.exportAsync({ format: 'PNG' });
 
       figma.ui.postMessage({
         type: 'nodeInfo',
-        message: { name: node.name, id: node.id, imageData: image, taskName: taskName },
+        message: {
+          name: node.name,
+          id: node.id,
+        },
       });
     } else {
-      const errorMessage = 'Please select a vertical frame to continue.';
-      console.log(
-        `Error: Selected node type: ${node.type}, layoutMode: ${'layoutMode' in node ? node.layoutMode : 'N/A'}`
-      );
-      figma.ui.postMessage({
-        type: 'error',
-        message: errorMessage,
-      });
-      figma.notify(errorMessage);
+      figma.notify('Please select a vertical frame to continue.', { timeout: 2000 });
     }
   } else {
     figma.ui.postMessage({
@@ -58,12 +61,12 @@ figma.on('selectionchange', async () => {
   }
 });
 
-// UT 리포트 생성 함수
+// Function to generate UT report
 const generateReport = async (postData: PostData) => {
-  // 폰트 로드
+  // Load fonts
   await loadFonts();
 
-  // lastAct 변수 생성, 초기 값은 None
+  // Create variable lastAct, initial value is None
   let lastAct = 'None';
   let roundCount = 0;
 
@@ -72,60 +75,63 @@ const generateReport = async (postData: PostData) => {
 
   // let taskComplete = false;
 
-  // "UT Reports" 프레임 검사 및 생성
+  // Check and create "UT Reports" frame
   const utReportsFrame = getOrCreateUTReportsFrame();
 
-  // Task 프레임 생성 및 추가
+  // Create and append Task frame
   const taskFrame = createTaskFrame(postData.taskName);
   utReportsFrame.appendChild(taskFrame);
 
-  // 선택된 노드의 정보를 가져옵니다.
+  // send taskFrame as a reportNode to the UI
+  figma.ui.postMessage({ type: 'reportNode', message: taskFrame.id });
+
+  // Get the information of the selected node.
   const node = (await figma.getNodeByIdAsync(postData.nodeId)) as FrameNode;
 
-  // Name 프레임 생성 및 추가
+  // Create and append Name frame
   const nameFrame = createNameFrame(node.name);
   taskFrame.appendChild(nameFrame);
 
-  // Task Description 프레임 생성 및 추가
+  // Create and append Task Description frame
   const taskDescFrame = createTaskDescFrame(postData.taskDesc, postData.personaDesc);
   taskFrame.appendChild(taskDescFrame);
 
-  // Anatomy 프레임 생성 및 추가
+  // Create and append Anatomy frame
   const anatomyFrame = createAnatomyFrame(roundCount);
   taskFrame.appendChild(anatomyFrame);
 
-  // 프리뷰 프레임을 생성
+  // Create a preview frame
   const previewFrame = createPreviewFrame();
   anatomyFrame.appendChild(previewFrame);
 
-  // 선택된 노드의 이미지 해시를 추출합니다.
+  // Extract the image hash of the selected node.
   const imageHash = await addNodeImageToPreviewFrame(node);
 
-  // beforeImage 프레임에 이미지 노드를 추가합니다.
-  const beforeImage = createImageFrameFromHash(imageHash, node.width, node.height, roundCount); // roundCount는 예시로 1을 사용
+  // Add an image node to the beforeImage frame.
+  const beforeImage = createImageFrameFromHash(imageHash, node.width, node.height, roundCount); // roundCount is an example using 1
   previewFrame.appendChild(beforeImage);
 
-  // elemList 생성
+  // Create elemList
   const elemList = await createElemList(node);
 
-  // 라벨링된 이미지 프레임 생성 및 관리
-  const afterImage = await createLabeledImageFrame(elemList, imageHash, node.width, node.height, roundCount); // roundCount는 예시로 1을 사용
+  // Create and manage labeled image frame
+  const afterImage = await createLabeledImageFrame(elemList, imageHash, node.width, node.height, roundCount); // roundCount is an example using 1
   previewFrame.appendChild(afterImage);
 
-  // 뷰포트 포커스 조정 1
+  // Adjust viewport focus 1
   figma.viewport.scrollAndZoomIntoView([taskFrame]);
 
-  // afterImage 프레임의 이미지를 Base64 문자열로 변환
+  // Convert the image of the afterImage frame to a Base64 string
   const afterImageBase64 = await getFrameImageBase64(afterImage);
 
-  // prompt 생성
+  // Create prompt
   const prompt = createPromptForTask(postData.taskDesc, postData.personaDesc);
 
-  // prompt에서 <last_act>를 lastAct로 대체
+  // Replace <last_act> in prompt with lastAct
   prompt.replace('<last_act>', lastAct);
 
-  // GPT 모델 호출
-  figma.notify('Asking AI gnerate UT Report...');
+  // Call GPT model
+  figma.notify('Asking AI to generate UT Report...');
   modelInstance
     .getModelResponse(prompt, [afterImageBase64])
     .then((response) => {
@@ -141,7 +147,7 @@ const generateReport = async (postData: PostData) => {
       figma.notify('Failed to get response from OpenAI');
     });
 
-  // 뷰포트 포커스 조정
+  // Adjust viewport focus
   // figma.viewport.scrollAndZoomIntoView([utReportsFrame]);
 };
 
@@ -243,7 +249,7 @@ function createText(characters: string, fontSize: number, fontStyle: 'Regular' |
 }
 
 // Anatomy 프레임 생성 함수
-function createAnatomyFrame(roundCount:number): FrameNode {
+function createAnatomyFrame(roundCount: number): FrameNode {
   const frame = figma.createFrame();
   frame.name = 'anatomy';
   frame.layoutMode = 'VERTICAL';
@@ -302,11 +308,6 @@ async function createElemList(
         height,
       },
     });
-
-    // // 'COMPONENT'와 'INSTANCE' 타입의 노드는 자식 노드를 탐색하지 않습니다.
-    // if (node.type === 'COMPONENT' || node.type === 'INSTANCE') {
-    //   return elemList;
-    // }
   }
 
   // 'GROUP' 타입의 노드 또는 'FRAME' 타입의 노드의 자식을 탐색합니다.
@@ -388,7 +389,13 @@ async function getFrameImageBase64(node: SceneNode): Promise<string> {
   return base64Encode;
 }
 
-function parseExploreRsp(rsp: string, previewFrame: FrameNode, elemList: UIElement[], roundCount: number, beforeImage: FrameNode): (string | number)[] | null {
+function parseExploreRsp(
+  rsp: string,
+  previewFrame: FrameNode,
+  elemList: UIElement[],
+  roundCount: number,
+  beforeImage: FrameNode
+): (string | number)[] | null {
   // 뷰포트 포커스 조정 2
   figma.viewport.scrollAndZoomIntoView([previewFrame]);
   try {
@@ -417,21 +424,20 @@ function parseExploreRsp(rsp: string, previewFrame: FrameNode, elemList: UIEleme
     modelResponseFrame.appendChild(createTextFrame('Summary', summary));
 
     // Create a new frame for the action image
-    const actionImageFrame = beforeImage.clone()
+    const actionImageFrame = beforeImage.clone();
     actionImageFrame.name = `${roundCount}_before_labeled_action`;
-
 
     // Highlight the selected UI element
     if (action.includes('tap') || action.includes('long_press')) {
       const area = parseInt(action.match(/\((.*?)\)/)[1]);
       const selectedElem = elemList[area - 1];
-  
+
       // Create a rectangle for the bounding box
       const bboxRect = createBoundingBox(selectedElem);
-  
+
       // Create a touch point
       const touchPoint = createTouchPoint(selectedElem);
-  
+
       // Add the bounding box and touch point to the action image frame
       actionImageFrame.appendChild(bboxRect);
       actionImageFrame.appendChild(touchPoint);
@@ -441,13 +447,13 @@ function parseExploreRsp(rsp: string, previewFrame: FrameNode, elemList: UIEleme
       const direction = params[1].trim();
       const distance = params[2].trim();
       const selectedElem = elemList[area - 1];
-  
+
       // Create a rectangle for the bounding box
       const bboxRect = createBoundingBox(selectedElem);
-  
+
       // Create a line for the swipe direction
       const swipeLine = createSwipeArrow(selectedElem, direction, distance);
-  
+
       // Add the bounding box and swipe line to the action image frame
       actionImageFrame.appendChild(bboxRect);
       actionImageFrame.appendChild(swipeLine);
@@ -465,7 +471,6 @@ function parseExploreRsp(rsp: string, previewFrame: FrameNode, elemList: UIEleme
       // Add the bounding box and speech bubble to the action image frame
       actionImageFrame.appendChild(bboxRect);
       actionImageFrame.appendChild(speechBubble);
-      
     }
     // Add the action image frame and model response frame to the preview frame
     previewFrame.appendChild(actionImageFrame);
@@ -538,7 +543,9 @@ function createTextFrame(title: string, content: string): FrameNode {
   return frame;
 }
 
-function parseModelResponse(rsp: string): { observation: string; thought: string; action: string; summary: string } | null {
+function parseModelResponse(
+  rsp: string
+): { observation: string; thought: string; action: string; summary: string } | null {
   const observationMatch = rsp.match(/Observation: (.*?)(?=\\n\\nThought:|$)/s);
   const thoughtMatch = rsp.match(/Thought: (.*?)(?=\\n\\nAction:|$)/s);
   const actionMatch = rsp.match(/Action: (.*?)(?=\\n\\nSummary:|$)/s);
@@ -575,7 +582,7 @@ function createSwipeArrow(selectedElem: UIElement, direction: string, distance: 
   distance = distance.replace(/\\/g, '').replace(/"/g, '');
 
   const swipeLine = figma.createLine();
-  
+
   // Set the length of the line based on the swipe strength
   let lineLength;
   switch (distance) {
@@ -598,14 +605,14 @@ function createSwipeArrow(selectedElem: UIElement, direction: string, distance: 
   swipeLine.strokes = [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }]; // Red color
   swipeLine.x = selectedElem.bbox.x + selectedElem.bbox.width / 2;
   swipeLine.y = selectedElem.bbox.y + selectedElem.bbox.height / 2;
-  
+
   // Set the end point of the line based on the swipe direction
   switch (direction) {
     case 'up':
       swipeLine.rotation = -90;
       swipeLine.y -= lineLength / 2;
       break;
-    case 'down': 
+    case 'down':
       swipeLine.rotation = 90;
       swipeLine.y += lineLength / 2;
       break;
@@ -656,7 +663,49 @@ function createSpeechBubble(selectedElem: UIElement, text: string): FrameNode {
   return bubble;
 }
 
+async function getUsageCount() {
+  let usageCount = await figma.clientStorage.getAsync('usage-count');
+  if (usageCount === undefined) {
+    usageCount = 10;
+    await figma.clientStorage.setAsync('usage-count', usageCount);
+  }
+  return usageCount;
+}
 
+// async function decrementUsageCount() {
+//   let usageCount = await getUsageCount();
+//   usageCount--;
+//   await figma.clientStorage.setAsync('usage-count', usageCount);
+//   return usageCount;
+// }
+
+// async function initiateCheckout() {
+//   await figma.payments.initiateCheckoutAsync({
+//     interstitial: 'TRIAL_ENDED',
+//   });
+// }
+
+// async function checkAndRunPluginFeatureCode() {
+//   let usageCount = await getUsageCount();
+
+//   if (usageCount === 0) {
+//     if (figma.payments.status.type === 'UNPAID') {
+//       await initiateCheckout();
+//       if (figma.payments.status.type === 'UNPAID') {
+//         figma.notify('You have run out of free usages of this plugin.');
+//         return;
+//       }
+//     }
+//   } else {
+//     usageCount = await decrementUsageCount();
+//   }
+// }
+
+// Error message handler 함수
+function errorMessageHandler(errorMessage: string) {
+  console.error('Error:', errorMessage);
+  figma.notify(errorMessage, { error: true });
+}
 figma.ui.onmessage = (msg) => {
   if (msg.type === 'submit') {
     // 수신된 메시지를 콘솔에 로그합니다.
@@ -665,5 +714,21 @@ figma.ui.onmessage = (msg) => {
 
     // UT 리포트 생성 함수 호출
     generateReport(postData).catch(console.error);
+  }
+
+  if (msg.type === 'moveFocus') {
+    const nodeId: string = msg.data;
+    figma
+      .getNodeByIdAsync(nodeId)
+      .then((node) => {
+        figma.viewport.scrollAndZoomIntoView([node]);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+  }
+
+  if (msg.type === 'errorMessage') {
+    errorMessageHandler(msg.data);
   }
 };

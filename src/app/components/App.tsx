@@ -1,20 +1,67 @@
-import React from 'react';
-import { Typography, TextField, IconButton, Box, Card, CardContent, CardMedia } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LoadingButton from '@mui/lab/LoadingButton';
-
-const uint8ArrayToObjectURL = (data: Uint8Array): string => {
-  return URL.createObjectURL(new Blob([data], { type: 'image/png' }));
-};
+import * as React from 'react';
+import {
+  Box,
+  Button,
+  Textarea,
+  Modal,
+  ModalDialog,
+  DialogTitle,
+  DialogContent,
+  Stack,
+  ModalClose,
+  DialogActions,
+} from '@mui/joy';
+import { AutoAwesome, FaceRetouchingNatural } from '@mui/icons-material';
 
 const App = () => {
-  const [imageUrl, setImageUrl] = React.useState<string>('');
-  const [name, setName] = React.useState<string>('');
-  const [nodeId, setNodeId] = React.useState<string>('');
-  const [taskName, setTaskName] = React.useState<string>('');
+  const [taskNode, setTaskNode] = React.useState<string>('');
+  const [nodeName, setNodeName] = React.useState<string>('');
   const [taskDesc, setTaskDesc] = React.useState<string>('');
-  const [personaDesc, setPersonaDesc] = React.useState<string>('General User Persona');
+  const [personaDesc, setPersonaDesc] = React.useState<string>('');
+  const [reportNode, setReportNode] = React.useState<string>('');
   const [loading, setLoading] = React.useState(false);
+  const [modalOpen, setModalOpen] = React.useState<boolean>(false);
+
+  // const [credits, setCredits] = React.useState<number>(0); // Add this line to manage credits state
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // create a task name with the current timestamp
+    const demoTimestamp = new Date();
+
+    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${
+      demoTimestamp.getMonth() + 1
+    }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
+
+    // personaDesc가 기본값일 경우 제외
+    const postData = {
+      nodeId: taskNode,
+      taskName: taskName,
+      taskDesc: taskDesc,
+      personaDesc: personaDesc ? personaDesc : undefined,
+    };
+
+    // Figma plugin으로 postData 전송 로직...
+    parent.postMessage({ pluginMessage: { type: 'submit', data: postData } }, '*');
+  };
+
+  const handleKeyDown = (e) => {
+    // Mac에서는 e.metaKey가 true이고, Windows/Linux에서는 e.ctrlKey가 true입니다.
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      handleSubmit(e);
+    }
+  };
+
+  // submit button activation condition: taskDesc is not empty + nodeId is not empty
+
+  const isEligible = taskDesc && taskNode;
+
+  // 버튼을 클릭했을 때, 만약 node ID가 있다면 controller로 해당 nodeID와 함께 moveFocus 타입 메시지를 보내고, 없다면 console에 에러 메시지를 출력합니다.
+  const handleNodeClick = (nodeId: string) => {
+    parent.postMessage({ pluginMessage: { type: 'moveFocus', data: nodeId } }, '*');
+  };
 
   React.useEffect(() => {
     window.onmessage = (event) => {
@@ -22,123 +69,144 @@ const App = () => {
       if (type === 'nodeInfo') {
         console.log(message);
 
-        setImageUrl(uint8ArrayToObjectURL(message.imageData));
-        setName(message.name);
-        setNodeId(message.id);
-        setTaskName(message.taskName);
+        setTaskNode(message.id);
+        setNodeName(message.name);
       }
       if (type === 'clear') {
-        setImageUrl('');
-        setName('');
-        setNodeId('');
-        setTaskName('');
+        setTaskNode('');
+        setNodeName('');
+        setReportNode('');
       }
       if (type === 'loading') {
         setLoading(message);
       }
+      if (type === 'credits') {
+        console.log('here', message);
+        // setCredits(message); // Add this line to update credits state
+      }
+      if (type === 'reportNode') {
+        setReportNode(message);
+      }
     };
-  }, [taskDesc, personaDesc]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // personaDesc가 기본값일 경우 제외
-    const postData = {
-      nodeId,
-      taskName,
-      taskDesc,
-      personaDesc: personaDesc !== 'General User Persona' ? personaDesc : undefined,
-    };
-
-    // Figma plugin으로 postData 전송 로직...
-    parent.postMessage({ pluginMessage: { type: 'submit', data: postData } }, '*');
-  };
-
-  // submit button activation condition: taskDesc is not empty + nodeId is not empty
-
-  const isEligible = taskDesc && nodeId;
+  }, []);
 
   return (
-    <Box
-      sx={{
-        width: 360, // Setting the width of the UI
-        height: 640, // Setting the height of the UI
-        overflow: 'auto', // Displaying a scrollbar if the content overflows
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px',
-        bgcolor: 'background.paper', // Setting the background color
-        justifyContent: 'space-between', // Adjusting to space out the content
-      }}
-    >
-      <Box>
-        <Card sx={{ mb: 3, borderRadius: '16px' }}>
-          <Box sx={{ paddingTop: '4px', paddingBottom: '4px', backgroundColor: '#DDD' }}>
-            <CardMedia
-              component="img"
-              sx={{
-                height: '194px',
-                maxWidth: '100%',
-                objectFit: 'contain',
-                margin: 'auto',
-                display: 'block',
-              }}
-              image={imageUrl || 'https://placehold.co/360x194?text=App+Agent'}
-              alt={name || 'Image'}
-            />
+    <>
+      <Textarea
+        placeholder={
+          taskNode
+            ? `Please enter the description of the task you want me on \"${nodeName}\" to complete in a few sentences:`
+            : 'Select a frame or component to start testing'
+        }
+        disabled={!taskNode}
+        value={taskDesc}
+        onChange={(event) => setTaskDesc(event.target.value)}
+        onKeyDown={handleKeyDown}
+        minRows={2}
+        maxRows={6}
+        size="md"
+        startDecorator={
+          <Box sx={{ display: 'flex', gap: 0.5, flex: 1 }}>
+            <Button variant="outlined" color="neutral" onClick={() => handleNodeClick(taskNode)} size="sm">
+              {taskNode ? `🎨 ${nodeName}` : '🎨 No frame'}
+            </Button>
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => handleNodeClick(reportNode)}
+              size="sm"
+              disabled={!reportNode}
+            >
+              📝 Report
+            </Button>
+            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }}>
+              See all
+            </Button>
           </Box>
-          <CardContent sx={{ p: 3, mb: 0 }}>
-            <Typography variant="body1" sx={{ mb: 3 }} color="black">
-              {name || 'Please select a node in Figma'}
-            </Typography>
-          </CardContent>
-        </Card>
-        <TextField
-          id="task_desc"
-          label="Task Description"
-          multiline
-          rows={3}
-          variant="outlined"
-          fullWidth
-          sx={{ borderRadius: '16px', mb: 2 }}
-          placeholder="Please enter the description of the task you want me to complete in a few sentences:"
-          InputProps={{ style: { borderRadius: 16 } }}
-          value={taskDesc}
-          onChange={(e) => setTaskDesc(e.target.value)}
-          required
-          disabled={loading}
-        />
-        <TextField
-          id="persona_desc"
-          label="Persona"
-          variant="outlined"
-          fullWidth
-          sx={{ borderRadius: '16px', mb: 2 }}
-          placeholder="(Optional) Please enter the description of the user persona you'd like me to emulate :"
-          InputProps={{ style: { borderRadius: 16 } }}
-          value={personaDesc}
-          onChange={(e) => setPersonaDesc(e.target.value)}
-          disabled
-        />
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2 }}>
-        <LoadingButton
-          loading={loading} 
-          loadingIndicator="Loading…"
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '16px', flexGrow: 1, mr: 1 }}
-          onClick={handleSubmit}
-          disabled={!isEligible}
-        >
-          Start Testing
-        </LoadingButton>
-        <IconButton aria-label="settings" sx={{ ml: 1 }}>
-          <SettingsIcon />
-        </IconButton>
-      </Box>
-    </Box>
+        }
+        endDecorator={
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 'var(--Textarea-paddingBlock)',
+              pt: 'var(--Textarea-paddingBlock)',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              flex: 'auto',
+            }}
+          >
+            <Button
+              variant="plain"
+              color="neutral"
+              onClick={() => setModalOpen(true)}
+              startDecorator={<FaceRetouchingNatural fontSize="small" />}
+            >
+              {/* if persona is empty, Button label is "Persona". If set use persona text and truncate the text */}
+              {personaDesc ? personaDesc.length > 12 ? `${personaDesc.slice(0, 12)}...` : personaDesc : 'Persona'}
+            </Button>
+
+            <Button
+              // if loading is true, button is disabled, if is not eligible, button is disabled as well
+              loading={loading}
+              disabled={isEligible ? false : true}
+              loadingIndicator="Loading…"
+              color="primary"
+              sx={{ ml: 'auto' }}
+              size="sm"
+              onClick={handleSubmit}
+              startDecorator={<AutoAwesome fontSize="small" />}
+            >
+              Submit
+            </Button>
+          </Box>
+        }
+        sx={{ minWidth: 480, minHeight: 240 }}
+      />
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+      >
+        <ModalDialog layout="fullscreen">
+          <ModalClose />
+          <DialogTitle>Create Persona</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ height: '100%' }}>
+              <Textarea
+                placeholder="(Optional) Please enter the description of the user persona you'd like me to emulate : "
+                autoFocus
+                value={personaDesc}
+                minRows={3}
+                maxRows={6}
+                onChange={(e) => setPersonaDesc(e.target.value)}
+                sx={{ height: '100%' }}
+              />
+              <DialogActions>
+                <Button
+                  color="primary"
+                  variant='soft'
+                  onClick={() => {
+                    setModalOpen(false);
+                  }}
+                >
+                  Set Persona
+                </Button>
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => {
+                    setPersonaDesc('');
+                    setModalOpen(false);
+                  }}
+                >
+                  Reset
+                </Button>
+              </DialogActions>
+            </Stack>
+          </DialogContent>
+        </ModalDialog>
+      </Modal>
+    </>
   );
 };
 
