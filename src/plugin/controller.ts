@@ -699,4 +699,10 @@ figma.ui.onmessage = (msg) => {
   if (msg.type === 'errorMessage') {
     errorMessageHandler(msg.data);
   }
+
+  // if (msg.type === 'payment') {
+  //   if (figma.payments.status.type === 'UNPAID') {
+  //     figma.payments.initiateCheckoutAsync( { interstitial: 'PAID_FEATURE' } );
+  //   }
+  // }
 };

@@ -62,6 +62,12 @@ const App = () => {
     parent.postMessage({ pluginMessage: { type: 'moveFocus', data: nodeId } }, '*');
   };
 
+  // // 버튼을 클릭했을 때, controller로 payment 타입 메시지를 보내고, loading을 true로 변경합니다.
+  // const handlePaymentClick = () => {
+  //   parent.postMessage({ pluginMessage: { type: 'payment', data: userStatus } }, '*');
+  //   setLoading(true);
+  // };
+
   React.useEffect(() => {
     window.onmessage = (event) => {
       const { type, message } = event.data.pluginMessage;
@@ -123,7 +129,9 @@ const App = () => {
         startDecorator={
           <Box sx={{ display: 'flex', gap: 0.5, flex: 1 }}>
             <Button variant="outlined" color="neutral" onClick={() => handleNodeClick(taskNode)} size="sm">
-              {taskNode ? `🎨 ${nodeName}` : '🎨 No frame'}
+              {/* if taskNode is empty, Button label is "🎨 No frame". If set, use nodeName text and truncate the text */}
+              {taskNode ? (nodeName.length > 12 ? `${nodeName.slice(0, 12)}...` : nodeName) : '🎨 No frame'}
+              
             </Button>
             <Button
               variant="outlined"
@@ -134,7 +142,7 @@ const App = () => {
             >
               📝 Report
             </Button>
-            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }}>
+            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }} >
               
               {userStatus === 'PAID' && `💳 Paid`} 
               {userStatus === 'IN_TRIAL' && `⏳ ${trialDays} days left`}
