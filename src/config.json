@@ -1,7 +1,7 @@
 {
   "MODEL": "OpenAI",
   "OPENAI_API_BASE": "https://api.openai.com/v1/chat/completions",
-  "OPENAI_API_KEY": "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",
+  "OPENAI_API_KEY": "sk-proj-FfmCDeXPfmbhIZlfwquKT3BlbkFJz1F5x5KMMmfkR9HYgx9O",
   "OPENAI_API_MODEL": "gpt-4o",
   "MAX_TOKENS": 300,
   "TEMPERATURE": 0.0,

@@ -13,6 +13,7 @@ import {
 } from '@mui/joy';
 import { AutoAwesome, FaceRetouchingNatural } from '@mui/icons-material';
 
+
 const App = () => {
   const [taskNode, setTaskNode] = React.useState<string>('');
   const [nodeName, setNodeName] = React.useState<string>('');
@@ -22,11 +23,10 @@ const App = () => {
   const [loading, setLoading] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState<boolean>(false);
   const [userStatus, setUserStatus] = React.useState('');
-  const [trialDays, setTrialDays] = React.useState<number>(0);
+  const [trialDays, setTrialDays] = React.useState<string>('0');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
 
     // create a task name with the current timestamp
     const demoTimestamp = new Date();
@@ -46,7 +46,7 @@ const App = () => {
     parent.postMessage({ pluginMessage: { type: 'submit', data: postData } }, '*');
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = async (e) => {
     // Mac에서는 e.metaKey가 true이고, Windows/Linux에서는 e.ctrlKey가 true입니다.
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       handleSubmit(e);
@@ -62,11 +62,28 @@ const App = () => {
     parent.postMessage({ pluginMessage: { type: 'moveFocus', data: nodeId } }, '*');
   };
 
-  // // 버튼을 클릭했을 때, controller로 payment 타입 메시지를 보내고, loading을 true로 변경합니다.
-  // const handlePaymentClick = () => {
-  //   parent.postMessage({ pluginMessage: { type: 'payment', data: userStatus } }, '*');
-  //   setLoading(true);
-  // };
+  // 버튼을 클릭했을 때, controller로 payment 타입 메시지를 보내고, loading을 true로 변경합니다.
+  const handlePaymentClick = async () => {
+    // payment API가 아직 리뷰 중이라는 메시지를 Parent에 전달합니다.
+    parent.postMessage({ pluginMessage: { type: 'payment' } }, '*');
+    // setLoading(true);
+  };
+
+  // 트라이얼 데이를 계산하는 로직 
+  const calculateTrialDays = (trialDays: number): string => {
+    
+    const days = Math.ceil(trialDays);
+
+    // 만약 days가 1이면, 몇 시간이 남았는지를 계산해서 '00 hours left' 반환합니다. 2 이상 이면, '0 days left'를 반환합니다.
+    if (days === 1) {
+      const currentTime = new Date();
+      const endTrialTime = new Date(currentTime.getTime() + trialDays * 24 * 60 * 60 * 1000);
+      const hoursLeft = Math.ceil((endTrialTime.getTime() - currentTime.getTime()) / (1000 * 60 * 60));
+      return hoursLeft + ' hours left';
+    } else {
+      return days + ' days left';
+    }
+  };
 
   React.useEffect(() => {
     window.onmessage = (event) => {
@@ -98,12 +115,14 @@ const App = () => {
           case 'TRIAL_ENDED':
             // 트라이얼 기간 종료 및 결제 유도 UI 처리
             setUserStatus(message.status);
-            setTrialDays(0)
+            setTrialDays('0');
             break;
           case 'IN_TRIAL':
             // 트라이얼 기간 중 UI 처리
             setUserStatus(message.status);
-            setTrialDays(message.trialDays);
+            // 트라이얼 남은 일수는 올림 처리 (예 : 1.1일 -> 2일)
+            const trialDays = calculateTrialDays(message.trialDays);
+            setTrialDays(trialDays);
 
             break;
         }
@@ -131,7 +150,6 @@ const App = () => {
             <Button variant="outlined" color="neutral" onClick={() => handleNodeClick(taskNode)} size="sm">
               {/* if taskNode is empty, Button label is "🎨 No frame". If set, use nodeName text and truncate the text */}
               {taskNode ? (nodeName.length > 12 ? `${nodeName.slice(0, 12)}...` : nodeName) : '🎨 No frame'}
-              
             </Button>
             <Button
               variant="outlined"
@@ -142,10 +160,9 @@ const App = () => {
             >
               📝 Report
             </Button>
-            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }} >
-              
-              {userStatus === 'PAID' && `💳 Paid`} 
-              {userStatus === 'IN_TRIAL' && `⏳ ${trialDays} days left`}
+            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }} onClick={handlePaymentClick}>
+              {userStatus === 'PAID' && `💳 Paid`}
+              {userStatus === 'IN_TRIAL' && `⏳ ${trialDays}`}
               {userStatus === 'TRIAL_ENDED' && `🔒 Trial Ended`}
             </Button>
           </Box>

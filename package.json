@@ -17,6 +17,7 @@
     "@mui/joy": "^5.0.0-beta.36",
     "@mui/lab": "^5.0.0-alpha.170",
     "@mui/material": "^5.15.19",
+    "figma-jsonrpc": "^0.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1"
