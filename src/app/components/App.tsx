@@ -25,7 +25,6 @@ const App = () => {
   const [personaDesc, setPersonaDesc] = React.useState<string>('');
   const [reportNode, setReportNode] = React.useState<string>('');
   const [loading, setLoading] = React.useState(false);
-  const [openaiModel, setOpenaiModel] = React.useState('');
   const [apiKey, setApiKey] = React.useState('');
   const [personaModalOpen, setPersonaModalOpen] = React.useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = React.useState(false);
@@ -135,9 +134,6 @@ const App = () => {
         setApiKey(message);
         setApiKeyInput(message);
       }
-      if (type === 'openaiModel') {
-        setOpenaiModel(message);
-      }
     };
   }, []);
 
@@ -166,7 +162,13 @@ const App = () => {
         size="md"
         startDecorator={
           <Box sx={{ display: 'flex', gap: 0.5, flex: 1 }}>
-            <Button variant="outlined" color="neutral" onClick={() => handleNodeClick(taskNode)} size="sm">
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => handleNodeClick(taskNode)}
+              size="sm"
+              disabled={!taskNode}
+            >
               {/* if taskNode is empty, Button label is "🎨 No frame". If set, use nodeName text and truncate the text */}
               {taskNode ? (nodeName.length > 12 ? `${nodeName.slice(0, 12)}...` : nodeName) : '🎨 No frame'}
             </Button>
@@ -179,8 +181,15 @@ const App = () => {
             >
               📝 Report
             </Button>
-            <Button variant="outlined" color="neutral" sx={{ ml: 'auto' }} onClick={() => setApiKeyModalOpen(true)}>
-              {openaiModel}
+            <Button
+              variant="outlined"
+              color="neutral"
+              sx={{ ml: 'auto' }}
+              onClick={() => setApiKeyModalOpen(true)}
+              disabled={!apiKey}
+              size="sm"
+            >
+              {apiKey ? '🔑 API Key' : '🔒 No key'}
             </Button>
           </Box>
         }

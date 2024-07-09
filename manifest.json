@@ -10,6 +10,5 @@
   "networkAccess": {
     "allowedDomains": ["https://api.openai.com"],
     "reasoning": "Acceess openai API."
-  },
-  "permissions": ["payments"]
+  }
 }

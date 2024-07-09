@@ -7,7 +7,7 @@ import {
   sendNodeInfoToUI,
 } from './utils/FigmaUtils';
 import { createModelInstance } from './api';
-import { openAIConfig, updateOpenAIConfig } from './config';
+import { openAIConfig, updateOpenAIConfig, resetOpenAIConfig } from './config';
 
 // Create model instance
 let modelInstance = createModelInstance(openAIConfig);
@@ -16,13 +16,12 @@ figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
 
 // Send key and selection when the UI is loaded
 async function sendApiKeyAndNodeInfoToUI() {
-  const apiKey = figma.root.getPluginData('openaiApiKey');
+  const apiKey = await figma.clientStorage.getAsync('openaiApiKey');
   if (apiKey) {
     updateAndSendApiKey(apiKey);
   } else {
     figma.ui.postMessage({ type: 'apiKey', message: '' });
   }
-  figma.ui.postMessage({ type: 'openaiModel', message: openAIConfig.openaiApiModel });
   await sendNodeInfoToUI();
 }
 
@@ -50,13 +49,11 @@ async function generateReport(postData: PostData, modelInstance: any) {
     figma.ui.postMessage({ type: 'reportNode', message: taskFrame.id });
 
     // 3. create report
-    const { prompt, previewFrameId, beforeImageId, afterImageId, elemList }: any = await getGenerateReportPrompt(
+    const { prompt, previewFrameId, beforeImageId, afterImageId, elemList, elementStartX, elementStartY }: any = await getGenerateReportPrompt(
       postData,
       taskFrame.id,
       0 // round count set to "0"
     );
-
-    console.log(prompt);
 
     const response = await requestAIModelAndProcessResponse(prompt, afterImageId, modelInstance);
 
@@ -67,7 +64,10 @@ async function generateReport(postData: PostData, modelInstance: any) {
         beforeImageId,
         elemList,
         0, // round count set to "0". It will be used in future update.
-        taskFrame.id
+        taskFrame.id,
+        elementStartX,
+        elementStartY
+
       );
     } else {
       errorMessageHandler('Failed to get response from AI');
@@ -106,7 +106,7 @@ const requestAIModelAndProcessResponse = async (prompt: string, afterImageId: st
 };
 
 function updateAndSendApiKey(apiKey: string) {
-  figma.root.setPluginData('openaiApiKey', apiKey);
+  figma.clientStorage.setAsync('openaiApiKey', apiKey);
   updateOpenAIConfig(apiKey);
   modelInstance = createModelInstance(openAIConfig);
   figma.ui.postMessage({ type: 'apiKey', message: apiKey });
@@ -146,7 +146,11 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === 'deleteApiKey') {
-    updateAndSendApiKey('');
+    await figma.clientStorage.deleteAsync('openaiApiKey');
+    resetOpenAIConfig();
+    modelInstance = createModelInstance(openAIConfig);
+    figma.ui.postMessage({ type: 'apiKey', message: '' });
+    figma.notify('API key has been deleted', { timeout: 2000 });
   }
 
   if (msg.type === 'errorMessage') {

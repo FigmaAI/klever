@@ -10,10 +10,10 @@ export function createText(characters: string, fontSize: number, fontStyle: 'Reg
   return text;
 }
 
-export function createBoundingBox(selectedElem: UIElement): RectangleNode {
+export function createBoundingBox(selectedElem: UIElement, x: number, y: number): RectangleNode {
   const bboxRect = figma.createRectangle();
-  bboxRect.x = selectedElem.bbox.x;
-  bboxRect.y = selectedElem.bbox.y;
+  bboxRect.x = selectedElem.bbox.x + (x || 0);
+  bboxRect.y = selectedElem.bbox.y + (y || 0);
   bboxRect.resize(selectedElem.bbox.width, selectedElem.bbox.height);
   bboxRect.strokeWeight = 4;
   bboxRect.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 0 } }]; // Yellow color
@@ -21,10 +21,10 @@ export function createBoundingBox(selectedElem: UIElement): RectangleNode {
   return bboxRect;
 }
 
-export function createTouchPoint(selectedElem: UIElement): EllipseNode {
+export function createTouchPoint(selectedElem: UIElement, x: number, y: number): EllipseNode {
   const touchPoint = figma.createEllipse();
-  touchPoint.x = selectedElem.bbox.x + selectedElem.bbox.width / 2;
-  touchPoint.y = selectedElem.bbox.y + selectedElem.bbox.height / 2;
+  touchPoint.x = selectedElem.bbox.x + selectedElem.bbox.width / 2 + (x || 0);
+  touchPoint.y = selectedElem.bbox.y + selectedElem.bbox.height / 2 + (y || 0);
   touchPoint.resize(10, 10); // Adjust the size as needed
   touchPoint.fills = [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }]; // Red color
   return touchPoint;
@@ -58,7 +58,13 @@ export function createTextFrame(title: string, content: string): FrameNode {
   return frame;
 }
 
-export function createSwipeArrow(selectedElem: UIElement, direction: string, distance: string): LineNode {
+export function createSwipeArrow(
+  selectedElem: UIElement,
+  direction: string,
+  distance: string,
+  x: number,
+  y: number
+): LineNode {
   // Remove backslashes and quotes(\") from the direction string
   direction = direction.replace(/\\/g, '').replace(/"/g, '');
   distance = distance.replace(/\\/g, '').replace(/"/g, '');
@@ -85,8 +91,8 @@ export function createSwipeArrow(selectedElem: UIElement, direction: string, dis
   swipeLine.strokeCap = 'ARROW_LINES';
   swipeLine.strokeWeight = 4;
   swipeLine.strokes = [{ type: 'SOLID', color: { r: 1, g: 0, b: 0 } }]; // Red color
-  swipeLine.x = selectedElem.bbox.x + selectedElem.bbox.width / 2;
-  swipeLine.y = selectedElem.bbox.y + selectedElem.bbox.height / 2;
+  swipeLine.x = selectedElem.bbox.x + selectedElem.bbox.width / 2 + (x || 0);
+  swipeLine.y = selectedElem.bbox.y + selectedElem.bbox.height / 2 + (y || 0);
 
   // Set the end point of the line based on the swipe direction
   switch (direction) {
@@ -110,7 +116,7 @@ export function createSwipeArrow(selectedElem: UIElement, direction: string, dis
   return swipeLine;
 }
 
-export function createSpeechBubble(selectedElem: UIElement, text: string): FrameNode {
+export function createSpeechBubble(selectedElem: UIElement, text: string, x: number, y: number): FrameNode {
   const bubble = figma.createFrame();
   bubble.name = 'Speech Bubble';
   bubble.layoutMode = 'VERTICAL';
@@ -120,8 +126,8 @@ export function createSpeechBubble(selectedElem: UIElement, text: string): Frame
   bubble.itemSpacing = 4;
   bubble.cornerRadius = 8;
   bubble.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }]; // White color
-  bubble.x = selectedElem.bbox.x + selectedElem.bbox.width / 2;
-  bubble.y = selectedElem.bbox.y + selectedElem.bbox.height / 2;
+  bubble.x = selectedElem.bbox.x + selectedElem.bbox.width / 2 + (x || 0);
+  bubble.y = selectedElem.bbox.y + selectedElem.bbox.height / 2 + (y || 0);
 
   const textNode = figma.createText();
   textNode.characters = text;
@@ -239,10 +245,12 @@ export function createPreviewFrame(): FrameNode {
   return frame;
 }
 
-export async function addNodeImageToPreviewFrame(node: SceneNode): Promise<string> {
+export async function addNodeImageToPreviewFrame(
+  node: SceneNode
+): Promise<{ imageHash: string; imageBytes: Uint8Array }> {
   const imageBytes = await node.exportAsync({ format: 'PNG' });
   const imageHash = figma.createImage(imageBytes).hash;
-  return imageHash;
+  return { imageHash, imageBytes };
 }
 
 export async function createElemList(
@@ -303,21 +311,35 @@ export function createImageFrameFromHash(
   return imageFrame;
 }
 
+export async function createImageFrameFromBytes(imageBytes: Uint8Array, roundCount: number): Promise<FrameNode> {
+  const imageFrame = figma.createFrame();
+  imageFrame.name = `${roundCount}_before_labeled`;
+
+  const image = figma.createImage(imageBytes);
+  const { width, height } = await image.getSizeAsync();
+  imageFrame.resize(width, height);
+  imageFrame.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: image.hash }];
+
+  return imageFrame;
+}
+
 export async function createLabeledImageFrame(
   elemList: UIElement[],
-  imageHash: string,
-  width: number,
-  height: number,
+  imageBytes: Uint8Array,
+  elementWidth: number,
+  elementHeight: number,
   roundCount: number
 ) {
   // create a labeled frame with the image and UI elements
-  const imageNode = figma.createRectangle();
-  imageNode.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash }];
-  imageNode.resize(width, height);
+  const image = figma.createImage(imageBytes);
+  const { width, height } = await image.getSizeAsync();
+  const elementStartX: number = (width - elementWidth) / 2;
+  const elementStartY: number = (height - elementHeight) / 2;
+
   const labeledFrame = figma.createFrame();
   labeledFrame.name = `${roundCount}_after_labeled`;
   labeledFrame.resize(width, height);
-  labeledFrame.appendChild(imageNode);
+  labeledFrame.fills = [{ type: 'IMAGE', scaleMode: 'FILL', imageHash: image.hash }];
 
   elemList.forEach((elem, index) => {
     const elemFrame = figma.createFrame();
@@ -329,9 +351,8 @@ export async function createLabeledImageFrame(
     elemFrame.primaryAxisSizingMode = 'AUTO';
     elemFrame.counterAxisSizingMode = 'AUTO';
 
-    elemFrame.x = elem.bbox.x + elem.bbox.width / 2 - 8;
-    elemFrame.y = elem.bbox.y + elem.bbox.height / 2 - 8;
-
+    elemFrame.x = elem.bbox.x + elem.bbox.width / 2 - 8 + elementStartX;
+    elemFrame.y = elem.bbox.y + elem.bbox.height / 2 - 8 + elementStartY;
     const textNode = figma.createText();
     textNode.characters = (index + 1).toString();
     textNode.fontSize = 12;
@@ -343,7 +364,7 @@ export async function createLabeledImageFrame(
     labeledFrame.appendChild(elemFrame);
   });
 
-  return labeledFrame;
+  return { labeledFrame, elementStartX, elementStartY };
 }
 
 export async function getFrameImageBase64(node: SceneNode): Promise<string> {
@@ -372,11 +393,8 @@ export async function getGenerateReportPrompt(postData: PostData, taskFrameId: s
     const taskFrame = (await figma.getNodeByIdAsync(taskFrameId)) as FrameNode;
     const node = (await figma.getNodeByIdAsync(postData.nodeId)) as SceneNode;
     // create frames for the task and the image
-    const { previewFrame, beforeImage, afterImage, elemList } = await createPreviewAndImageFrames(
-      node,
-      taskFrame,
-      roundCount
-    );
+    const { previewFrame, beforeImage, afterImage, elemList, elementStartX, elementStartY } =
+      await createPreviewAndImageFrames(node, taskFrame, roundCount);
     // request AI model and process response
     const prompt = createPromptForTask(postData.taskDesc, postData.personaDesc);
 
@@ -386,6 +404,8 @@ export async function getGenerateReportPrompt(postData: PostData, taskFrameId: s
       beforeImageId: beforeImage.id,
       afterImageId: afterImage.id,
       elemList,
+      elementStartX,
+      elementStartY,
     };
   } catch (error) {
     console.error('Error in generateReport:', error);
@@ -404,7 +424,9 @@ export async function generateReportResult(
   beforeImageId: string,
   elemList: UIElement[],
   roundCount: number,
-  taskFrameId: string
+  taskFrameId: string,
+  elementStartX: number,
+  elementStartY: number
 ) {
   try {
     if (data) {
@@ -413,7 +435,15 @@ export async function generateReportResult(
       figma.notify('Received response from AI');
       const previewFrame = (await figma.getNodeByIdAsync(previewFrameId)) as FrameNode;
       const beforeImage = (await figma.getNodeByIdAsync(beforeImageId)) as FrameNode;
-      const res = await parseExploreRsp(JSON.stringify(data), previewFrame, elemList, roundCount, beforeImage);
+      const res = await parseExploreRsp(
+        JSON.stringify(data),
+        previewFrame,
+        elemList,
+        roundCount,
+        beforeImage,
+        elementStartX,
+        elementStartY
+      );
       console.log('AI Model Response:', res);
       // move focus to the task Frame report
       figma.viewport.scrollAndZoomIntoView([taskFrame]);
@@ -433,7 +463,9 @@ function parseExploreRsp(
   previewFrame: FrameNode,
   elemList: UIElement[],
   roundCount: number,
-  beforeImage: FrameNode
+  beforeImage: FrameNode,
+  elementStartX: number,
+  elementStartY: number
 ): (string | number)[] | null {
   // 뷰포트 포커스 조정 2
   figma.viewport.scrollAndZoomIntoView([previewFrame]);
@@ -472,10 +504,10 @@ function parseExploreRsp(
       const selectedElem = elemList[area - 1];
 
       // Create a rectangle for the bounding box
-      const bboxRect = createBoundingBox(selectedElem);
+      const bboxRect = createBoundingBox(selectedElem, elementStartX, elementStartY);
 
       // Create a touch point
-      const touchPoint = createTouchPoint(selectedElem);
+      const touchPoint = createTouchPoint(selectedElem, elementStartX, elementStartY);
 
       // Add the bounding box and touch point to the action image frame
       actionImageFrame.appendChild(bboxRect);
@@ -488,10 +520,10 @@ function parseExploreRsp(
       const selectedElem = elemList[area - 1];
 
       // Create a rectangle for the bounding box
-      const bboxRect = createBoundingBox(selectedElem);
+      const bboxRect = createBoundingBox(selectedElem, elementStartX, elementStartY);
 
       // Create a line for the swipe direction
-      const swipeLine = createSwipeArrow(selectedElem, direction, distance);
+      const swipeLine = createSwipeArrow(selectedElem, direction, distance, elementStartX, elementStartY);
 
       // Add the bounding box and swipe line to the action image frame
       actionImageFrame.appendChild(bboxRect);
@@ -502,10 +534,10 @@ function parseExploreRsp(
       const selectedElem = elemList[area - 1];
 
       // Create a rectangle for the bounding box
-      const bboxRect = createBoundingBox(selectedElem);
+      const bboxRect = createBoundingBox(selectedElem, elementStartX, elementStartY);
 
       // Create a speech bubble for the input text
-      const speechBubble = createSpeechBubble(selectedElem, inputStr);
+      const speechBubble = createSpeechBubble(selectedElem, inputStr, elementStartX, elementStartY);
 
       // Add the bounding box and speech bubble to the action image frame
       actionImageFrame.appendChild(bboxRect);
@@ -578,17 +610,21 @@ async function createPreviewAndImageFrames(node: SceneNode, taskFrame: FrameNode
   taskFrame.appendChild(anatomyFrame);
   const previewFrame = createPreviewFrame();
   anatomyFrame.appendChild(previewFrame);
-  const imageHash = await addNodeImageToPreviewFrame(node);
-  const beforeImage = createImageFrameFromHash(imageHash, node.width, node.height, roundCount);
+  const { imageBytes } = await addNodeImageToPreviewFrame(node);
+  const beforeImage = await createImageFrameFromBytes(imageBytes, roundCount);
   previewFrame.appendChild(beforeImage);
   // Create elemList
   const elemList = await createElemList(node);
   // Create and manage labeled image frame
-  const afterImage = await createLabeledImageFrame(elemList, imageHash, node.width, node.height, roundCount);
+  const {
+    labeledFrame: afterImage,
+    elementStartX,
+    elementStartY,
+  } = await createLabeledImageFrame(elemList, imageBytes, node.width, node.height, roundCount);
   // set time delay for the afterImage to load
   await delay(500);
   previewFrame.appendChild(afterImage);
-  return { previewFrame, beforeImage, afterImage, elemList };
+  return { previewFrame, beforeImage, afterImage, elemList, elementStartX, elementStartY };
 }
 
 function delay(ms) {
@@ -616,4 +652,3 @@ export async function sendNodeInfoToUI() {
     });
   }
 }
-
