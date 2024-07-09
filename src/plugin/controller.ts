@@ -4,49 +4,35 @@ import {
   getGenerateReportPrompt,
   getImage,
   generateReportResult,
+  sendNodeInfoToUI,
 } from './utils/FigmaUtils';
 import { createModelInstance } from './api';
-import config from '../config.json';
-
-const openAIConfig = {
-  model: 'OpenAI',
-  openaiApiModel: config.OPENAI_API_MODEL,
-  maxTokens: 300,
-  temperature: 0.0,
-  requestInterval: 10,
-  docRefine: false,
-  maxRounds: 20,
-  minDist: 30,
-  baseUrl: config.OPENAI_API_BASE,
-  apiKey: config.OPENAI_API_KEY,
-};
+import { openAIConfig, updateOpenAIConfig } from './config';
 
 // Create model instance
-const modelInstance = createModelInstance(openAIConfig);
+let modelInstance = createModelInstance(openAIConfig);
 
 figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
-checkTrialAndInitiatePayment();
+
+// Send key and selection when the UI is loaded
+async function sendApiKeyAndNodeInfoToUI() {
+  const apiKey = figma.root.getPluginData('openaiApiKey');
+  if (apiKey) {
+    updateAndSendApiKey(apiKey);
+  } else {
+    figma.ui.postMessage({ type: 'apiKey', message: '' });
+  }
+  figma.ui.postMessage({ type: 'openaiModel', message: openAIConfig.openaiApiModel });
+  await sendNodeInfoToUI();
+}
+
+// send key and selection when the UI is loaded
+figma.on('run', async () => {
+  await sendApiKeyAndNodeInfoToUI();
+});
 
 figma.on('selectionchange', async () => {
-  const node = figma.currentPage.selection[0];
-
-  if (node) {
-    if ('layoutMode' in node && node.type === 'FRAME' && node.layoutMode !== 'HORIZONTAL') {
-      figma.ui.postMessage({
-        type: 'nodeInfo',
-        message: {
-          name: node.name,
-          id: node.id,
-        },
-      });
-    } else {
-      figma.notify('Please select a vertical frame to continue.', { timeout: 2000 });
-    }
-  } else {
-    figma.ui.postMessage({
-      type: 'clear',
-    });
-  }
+  await sendNodeInfoToUI();
 });
 
 async function generateReport(postData: PostData, modelInstance: any) {
@@ -70,7 +56,7 @@ async function generateReport(postData: PostData, modelInstance: any) {
       0 // round count set to "0"
     );
 
-    console.log(prompt)
+    console.log(prompt);
 
     const response = await requestAIModelAndProcessResponse(prompt, afterImageId, modelInstance);
 
@@ -106,30 +92,6 @@ async function loadFonts() {
   await figma.loadFontAsync({ family: 'Inter', style: 'Bold' });
 }
 
-async function checkTrialAndInitiatePayment() {
-  if (figma.payments.status.type === 'PAID') {
-    // 사용자가 이미 결제를 완료한 경우
-    figma.ui.postMessage({ type: 'userStatus', message: 'PAID' });
-  } else {
-    const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
-    const secondsSinceFirstRun = figma.payments.getUserFirstRanSecondsAgo();
-    const daysSinceFirstRun = secondsSinceFirstRun / ONE_DAY_IN_SECONDS;
-    if (daysSinceFirstRun > 3) {
-      // 트라이얼 기간이 종료된 경우
-      await figma.payments.initiateCheckoutAsync({ interstitial: 'TRIAL_ENDED' });
-      // 결제 상태를 다시 확인
-      if (figma.payments.status.type === 'UNPAID') {
-        figma.ui.postMessage({ type: 'userStatus', message: { status: 'TRIAL_ENDED' } });
-      } else {
-        figma.ui.postMessage({ type: 'userStatus', message: { status: 'PAID' } });
-      }
-    } else {
-      // 트라이얼 기간 중인 경우
-      figma.ui.postMessage({ type: 'userStatus', message: { status: 'IN_TRIAL', trialDays: 3 - daysSinceFirstRun } });
-    }
-  }
-}
-
 const requestAIModelAndProcessResponse = async (prompt: string, afterImageId: string, modelInstance: any) => {
   try {
     // convert the afterImage to base64
@@ -142,6 +104,14 @@ const requestAIModelAndProcessResponse = async (prompt: string, afterImageId: st
     figma.notify('An error occurred while processing AI model response', { timeout: 3000 });
   }
 };
+
+function updateAndSendApiKey(apiKey: string) {
+  figma.root.setPluginData('openaiApiKey', apiKey);
+  updateOpenAIConfig(apiKey);
+  modelInstance = createModelInstance(openAIConfig);
+  figma.ui.postMessage({ type: 'apiKey', message: apiKey });
+  figma.notify('API key has been updated', { timeout: 2000 });
+}
 
 // Error message handler 함수
 function errorMessageHandler(errorMessage: string) {
@@ -170,14 +140,16 @@ figma.ui.onmessage = async (msg) => {
       });
   }
 
-  if (msg.type === 'errorMessage') {
-    errorMessageHandler(msg.data);
+  if (msg.type === 'saveApiKey') {
+    const apiKey: string = msg.data;
+    updateAndSendApiKey(apiKey);
   }
 
-  if (msg.type === 'payment') {
-    // if (figma.payments.status.type === 'UNPAID') {
-    //   figma.payments.initiateCheckoutAsync( { interstitial: 'PAID_FEATURE' } );
-    // }
-    figma.notify('Payment API is under review. Please try again later.', { timeout: 3000 });
+  if (msg.type === 'deleteApiKey') {
+    updateAndSendApiKey('');
+  }
+
+  if (msg.type === 'errorMessage') {
+    errorMessageHandler(msg.data);
   }
 };

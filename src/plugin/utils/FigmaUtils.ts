@@ -594,3 +594,26 @@ async function createPreviewAndImageFrames(node: SceneNode, taskFrame: FrameNode
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export async function sendNodeInfoToUI() {
+  const node = figma.currentPage.selection[0];
+
+  if (node) {
+    if ('layoutMode' in node && node.type === 'FRAME' && node.layoutMode !== 'HORIZONTAL') {
+      figma.ui.postMessage({
+        type: 'nodeInfo',
+        message: {
+          name: node.name,
+          id: node.id,
+        },
+      });
+    } else {
+      figma.notify('Please select a vertical frame to continue.', { timeout: 2000 });
+    }
+  } else {
+    figma.ui.postMessage({
+      type: 'clear',
+    });
+  }
+}
+
