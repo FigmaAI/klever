@@ -49,11 +49,12 @@ async function generateReport(postData: PostData, modelInstance: any) {
     figma.ui.postMessage({ type: 'reportNode', message: taskFrame.id });
 
     // 3. create report
-    const { prompt, previewFrameId, beforeImageId, afterImageId, elemList, elementStartX, elementStartY }: any = await getGenerateReportPrompt(
-      postData,
-      taskFrame.id,
-      0 // round count set to "0"
-    );
+    const { prompt, previewFrameId, beforeImageId, afterImageId, elemList, elementStartX, elementStartY }: any =
+      await getGenerateReportPrompt(
+        postData,
+        taskFrame.id,
+        0 // round count set to "0"
+      );
 
     const response = await requestAIModelAndProcessResponse(prompt, afterImageId, modelInstance);
 
@@ -67,7 +68,6 @@ async function generateReport(postData: PostData, modelInstance: any) {
         taskFrame.id,
         elementStartX,
         elementStartY
-
       );
     } else {
       errorMessageHandler('Failed to get response from AI');

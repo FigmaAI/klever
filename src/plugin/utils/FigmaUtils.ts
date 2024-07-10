@@ -627,7 +627,7 @@ async function createPreviewAndImageFrames(node: SceneNode, taskFrame: FrameNode
   return { previewFrame, beforeImage, afterImage, elemList, elementStartX, elementStartY };
 }
 
-function delay(ms) {
+function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
