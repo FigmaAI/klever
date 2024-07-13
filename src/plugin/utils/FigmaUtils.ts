@@ -652,3 +652,23 @@ export async function sendNodeInfoToUI() {
     });
   }
 }
+
+export async function checkApiKeyValidity(apiKey: string): Promise<boolean> {
+  try {
+    const response = await fetch('https://api.openai.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.data.some((model: any) => model.id === 'gpt-4o');
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error('Error checking API key validity:', error);
+    return false;
+  }
+}

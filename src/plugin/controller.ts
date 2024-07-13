@@ -5,6 +5,7 @@ import {
   getImage,
   generateReportResult,
   sendNodeInfoToUI,
+  checkApiKeyValidity,
 } from './utils/FigmaUtils';
 import { createModelInstance } from './api';
 import { openAIConfig, updateOpenAIConfig, resetOpenAIConfig } from './config';
@@ -18,7 +19,7 @@ figma.showUI(__html__, { width: 480 + 32, height: 240 + 32 });
 async function sendApiKeyAndNodeInfoToUI() {
   const apiKey = await figma.clientStorage.getAsync('openaiApiKey');
   if (apiKey) {
-    updateAndSendApiKey(apiKey);
+    await updateAndSendApiKey(apiKey);
   } else {
     figma.ui.postMessage({ type: 'apiKey', message: '' });
   }
@@ -105,12 +106,25 @@ const requestAIModelAndProcessResponse = async (prompt: string, afterImageId: st
   }
 };
 
-function updateAndSendApiKey(apiKey: string) {
-  figma.clientStorage.setAsync('openaiApiKey', apiKey);
-  updateOpenAIConfig(apiKey);
-  modelInstance = createModelInstance(openAIConfig);
-  figma.ui.postMessage({ type: 'apiKey', message: apiKey });
-  figma.notify('API key has been updated', { timeout: 2000 });
+async function updateAndSendApiKey(apiKey: string) {
+  try {
+    // Check if the API key is valid for GPT-4
+    const isValid = await checkApiKeyValidity(apiKey);
+
+    if (isValid) {
+      figma.clientStorage.setAsync('openaiApiKey', apiKey);
+      updateOpenAIConfig(apiKey);
+      modelInstance = createModelInstance(openAIConfig);
+      figma.ui.postMessage({ type: 'apiKey', message: apiKey });
+      figma.notify('API key has been updated', { timeout: 2000 });
+    } else {
+      figma.ui.postMessage({ type: 'invalidApiKey' });
+      figma.notify('Invalid API key. Please enter a valid API key for GPT-4 vision.', { error: true, timeout: 3000 });
+    }
+  } catch (error) {
+    console.error('Error updating API key:', error);
+    figma.notify('An error occurred while updating the API key.', { error: true });
+  }
 }
 
 // Error message handler 함수
@@ -142,7 +156,7 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === 'saveApiKey') {
     const apiKey: string = msg.data;
-    updateAndSendApiKey(apiKey);
+    await updateAndSendApiKey(apiKey);
   }
 
   if (msg.type === 'deleteApiKey') {

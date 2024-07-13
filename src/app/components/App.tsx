@@ -14,9 +14,11 @@ import {
   FormLabel,
   Input,
   Alert,
+  Link,
+  Typography,
 } from '@mui/joy';
 
-import { AutoAwesome, FaceRetouchingNatural, Link, Delete } from '@mui/icons-material';
+import { AutoAwesome, FaceRetouchingNatural, Delete } from '@mui/icons-material';
 
 const App = () => {
   const [taskNode, setTaskNode] = React.useState<string>('');
@@ -36,9 +38,8 @@ const App = () => {
     // create a task name with the current timestamp
     const demoTimestamp = new Date();
 
-    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${
-      demoTimestamp.getMonth() + 1
-    }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
+    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${demoTimestamp.getMonth() + 1
+      }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
 
     // personaDesc가 기본값일 경우 제외
     const postData = {
@@ -81,10 +82,10 @@ const App = () => {
     setApiKeyModalOpen(false);
   };
 
-  const handleCopyLink = async () => {
-    const link = 'https://help.openai.com/en/articles/9186755-managing-your-work-in-the-api-platform-with-projects';
-    window.open(link, '_blank');
-  };
+  // const handleCopyLink = async () => {
+  //   const link = 'https://help.openai.com/en/articles/9186755-managing-your-work-in-the-api-platform-with-projects';
+  //   window.open(link, '_blank');
+  // };
 
   // // 버튼을 클릭했을 때, controller로 payment 타입 메시지를 보내고, loading을 true로 변경합니다.
   // const handlePaymentClick = async () => {
@@ -276,18 +277,27 @@ const App = () => {
         <ModalDialog layout="fullscreen">
           {/* <DialogTitle>OpenAI API Key</DialogTitle> */}
 
-          <Alert
-            color="primary"
-            variant="soft"
-            sx={{ mb: 2 }}
-            endDecorator={
-              <Button variant="soft" size="sm" color="primary" onClick={handleCopyLink} startDecorator={<Link />}>
-                Learn more
-              </Button>
-            }
-          >
-            Don't have an API key?
+          <Alert color="primary" variant="soft" sx={{ mb: 2 }}>
+            <div>
+              <Typography level="body-lg" mb={0.5}>
+                Don't have an OpenAI API key?
+              </Typography>
+              <Typography level="body-sm">
+                Get one from{' '}
+                <Link href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">
+                  here
+                </Link>
+                . Make sure you have access to{' '}
+                <Link href="https://platform.openai.com/docs/guides/rate-limits/usage-tiers" target="_blank" rel="noopener">
+                  GPT-4 Vision
+                </Link>
+                .
+              </Typography>
+            </div>
           </Alert>
+
+
+
 
           <FormControl sx={{ height: '100%' }}>
             <FormLabel>Enter your OpenAI API Key:</FormLabel>
