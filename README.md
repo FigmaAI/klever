@@ -17,18 +17,14 @@ Get an instant usability testing report of your design with the AI AppAgent. Ins
 - **Persona Simulation**: Experiment with different user personas to see how various users might experience your design.
 - **Seamless Figma Integration**: Analyze your designs directly within Figma, streamlining your workflow.
 
-### Pricing
-
-- **3-Day Free Trial**: Explore all of Klever's features with a 3-day free trial.
-- **Subscription Model (Coming Soon)**: Continue accessing Klever's features with our monthly subscription model after the trial period.
-
 ### How to Use Klever
 
 1. Open the design file you want to analyze in Figma.
 2. Navigate to Plugins > Klever and open the plugin.
-3. Select the frame or component you want to analyze.
-4. (Optional) Create a Task for the AI to perform and set up different personas.
-5. Click "Submit" or press "Cmd/Ctrl + Enter" to receive your AI-powered usability testing report.
+3. Enter your OpenAI API key. If you don't have one, get it from [here](https://platform.openai.com/api-keys). Make sure you have access to [GPT-4 Vision](https://platform.openai.com/docs/guides/rate-limits/usage-tiers).
+4. Select the frame or component you want to analyze.
+5. (Optional) Create a Task for the AI to perform and set up different personas.
+6. Click "Submit" or press "Cmd/Ctrl + Enter" to receive your AI-powered usability testing report.
 
 ## For Developers
 
