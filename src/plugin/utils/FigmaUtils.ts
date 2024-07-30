@@ -482,7 +482,7 @@ function parseExploreRsp(
     const modelResponseFrame = figma.createFrame();
     // set background color to transparent
     modelResponseFrame.fills = [];
-    modelResponseFrame.name = 'AppAgent UT Response';
+    modelResponseFrame.name = 'Klever UT Response';
     modelResponseFrame.layoutMode = 'VERTICAL';
     modelResponseFrame.itemSpacing = 32;
     modelResponseFrame.primaryAxisSizingMode = 'AUTO';
