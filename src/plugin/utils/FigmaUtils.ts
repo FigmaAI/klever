@@ -657,7 +657,7 @@ export async function checkApiKeyValidity(apiKey: string): Promise<boolean> {
   try {
     const response = await fetch('https://api.openai.com/v1/models', {
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     });
 
@@ -671,4 +671,49 @@ export async function checkApiKeyValidity(apiKey: string): Promise<boolean> {
     console.error('Error checking API key validity:', error);
     return false;
   }
+}
+
+export async function getClickCount(): Promise<number> {
+  const clickCount = await figma.clientStorage.getAsync('clickCount');
+  return clickCount ? parseInt(clickCount, 10) : 0;
+}
+
+export async function getSurveyDisabled(): Promise<boolean> {
+  const isSurveyDisabled = await figma.clientStorage.getAsync('isSurveyDisabled');
+  if (!isSurveyDisabled || isSurveyDisabled === 'false') {
+    return false;
+  } else {
+    return true; 
+  }
+}
+
+export async function setClickCount(clickCount: number): Promise<void> {
+  await figma.clientStorage.setAsync('clickCount', clickCount.toString());
+}
+
+export function isDevelopmentMode(): boolean {
+  return process.env.NODE_ENV === 'development';
+}
+
+export async function updateSurveyDisabled(status: boolean): Promise<void> {
+  // Save the survey status to clientStorage
+  await figma.clientStorage.setAsync('isSurveyDisabled', status.toString());
+}
+
+export async function getSurveyBoolean(): Promise<boolean> {
+  const clickCount = await getClickCount();
+  const isSurveyDisabled = await getSurveyDisabled();
+
+  if (isSurveyDisabled) {
+    return false;
+  }
+
+  const updatedClickCount = clickCount + 1;
+  await setClickCount(updatedClickCount);
+
+  if (isDevelopmentMode() || updatedClickCount === 1 || updatedClickCount % 10 === 0) {
+    return true;
+  }
+
+  return false;
 }

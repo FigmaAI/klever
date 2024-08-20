@@ -6,6 +6,7 @@ import {
   generateReportResult,
   sendNodeInfoToUI,
   checkApiKeyValidity,
+  getSurveyBoolean,
 } from './utils/FigmaUtils';
 import { createModelInstance } from './api';
 import { openAIConfig, updateOpenAIConfig, resetOpenAIConfig } from './config';
@@ -72,28 +73,16 @@ async function generateReport(postData: PostData, modelInstance: any) {
     figma.ui.postMessage({ type: 'loading', message: false });
     // 5. notify user
     figma.notify('Report generated successfully', { timeout: 3000 });
-    // 6. Get the current click count from clientStorage
-    let clickCount = await figma.clientStorage.getAsync('clickCount');
-    clickCount = clickCount ? parseInt(clickCount, 10) : 0;
-    // Increment the click count
-    clickCount += 1;
-    // Save the updated click count back to clientStorage
-    await figma.clientStorage.setAsync('clickCount', clickCount.toString());
+    
+    // 6. Get the survey status
+    const openSurvey = await getSurveyBoolean();
+    console.log('openSurvey:', openSurvey);
 
-    // Notify the user on the 1st and every 10th click, or always in development mode
-    const isDevelopmentMode = process.env.NODE_ENV === 'development';
-    if (isDevelopmentMode || clickCount === 1 || clickCount % 10 === 0) {
-      figma.notify('We value your feedback! Please take a moment to participate in our survey.', {
-        button: {
-          text: 'Take Survey',
-          action: () => {
-            // Open the survey URL in the default browser
-            figma.ui.postMessage({ type: 'open-survey' });
-            return true; // Close the notification after the button is clicked
-          },
-        },
-      });
-    }
+    if (openSurvey) {
+      figma.ui.postMessage({ type: 'open-survey', message: true });
+    } 
+
+
   } catch (error) {
     // turn off loading setLoading(false);
     figma.ui.postMessage({ type: 'loading', message: false });
@@ -180,6 +169,16 @@ figma.ui.onmessage = async (msg) => {
     modelInstance = createModelInstance(openAIConfig);
     figma.ui.postMessage({ type: 'apiKey', message: '' });
     figma.notify('API key has been deleted', { timeout: 2000 });
+  }
+
+  if (msg.type === 'updateSurveyDisabled') {
+    // get boolean from message data
+    const disabledStatus = msg.data;
+
+    console.log('updateSurveyDisabled:', disabledStatus);
+
+    // update isSurveyDisabled into client storage
+    await figma.clientStorage.setAsync('isSurveyDisabled', disabledStatus.toString());
   }
 
   if (msg.type === 'errorMessage') {

@@ -16,6 +16,7 @@ import {
   Alert,
   Link,
   Typography,
+  Checkbox,
 } from '@mui/joy';
 
 import { AutoAwesome, FaceRetouchingNatural, Delete } from '@mui/icons-material';
@@ -31,6 +32,8 @@ const App = () => {
   const [personaModalOpen, setPersonaModalOpen] = React.useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = React.useState(false);
   const [apiKeyInput, setApiKeyInput] = React.useState('');
+  const [surveyModalOpen, setSurveyModalOpen] = React.useState(false);
+  const [checked, setChecked] = React.useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -137,8 +140,8 @@ const App = () => {
         setApiKeyInput(message);
       }
       if (type === 'open-survey') {
-        // Open the survey URL in the default browser
-        window.open('https://forms.gle/VGpZVK1RgADCXPKU9', '_blank');
+        setSurveyModalOpen(message);
+        
       }
     };
   }, []);
@@ -150,6 +153,12 @@ const App = () => {
       setApiKeyModalOpen(false);
     }
   }, [apiKey]);
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChecked(e.target.checked);
+    parent.postMessage({ pluginMessage: { type: 'updateSurveyDisabled', data: e.target.checked } }, '*');
+  };
+
 
   return (
     <>
@@ -270,6 +279,8 @@ const App = () => {
               onClick={() => {
                 setPersonaDesc('');
                 setPersonaModalOpen(false);
+                setChecked(false);
+                parent.postMessage({ pluginMessage: { type: 'updateSurveyDisabled', data: false } }, '*');
               }}
             >
               Reset
@@ -320,6 +331,36 @@ const App = () => {
             </Box>
             <Button variant="plain" color="danger" onClick={handleApiKeyDelete} startDecorator={<Delete />}>
               Delete
+            </Button>
+          </DialogActions>
+        </ModalDialog>
+      </Modal>
+      <Modal open={surveyModalOpen} onClose={() => setSurveyModalOpen(false)}>
+        <ModalDialog layout="fullscreen">
+          <DialogTitle>We value your feedback!</DialogTitle>
+          <ModalClose />
+          <DialogContent sx={{ textAlign: 'left' }}>
+            Please take a moment to fill out the survey to help us improve the plugin.
+          </DialogContent>
+          <Checkbox
+            label="Do not show this popup again."
+            checked={checked}
+            onChange={handleCheckboxChange}
+            sx={{ mr: 'auto' }}
+          />
+          <DialogActions>
+            <Button
+              onClick={() => {
+                window.open('https://forms.gle/RsaKBytEoVuppPFX9', '_blank');
+                setSurveyModalOpen(false);
+              }}
+              variant="plain"
+              color="primary"
+            >
+              Take Survey
+            </Button>
+            <Button onClick={() => setSurveyModalOpen(false)} sx={{ mr: 1 }} variant="plain" color="neutral">
+              Close
             </Button>
           </DialogActions>
         </ModalDialog>
