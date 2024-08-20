@@ -4,4 +4,3 @@ settings.json
 /src/plugin/config.json
 yarn-error.log
 .vscode
-/.yarn
