@@ -2949,42 +2949,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"instant-ut-by-appagent@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "instant-ut-by-appagent@workspace:."
-  dependencies:
-    "@emotion/react": "npm:^11.11.4"
-    "@emotion/styled": "npm:^11.11.5"
-    "@figma/eslint-plugin-figma-plugins": "npm:^0.15.0"
-    "@figma/plugin-typings": "npm:^1.50.0"
-    "@mui/icons-material": "npm:^5.15.19"
-    "@mui/joy": "npm:^5.0.0-beta.36"
-    "@mui/lab": "npm:^5.0.0-alpha.170"
-    "@mui/material": "npm:^5.15.19"
-    "@types/react": "npm:^18.0.17"
-    "@types/react-dom": "npm:^18.0.6"
-    "@typescript-eslint/eslint-plugin": "npm:^7.11.0"
-    "@typescript-eslint/parser": "npm:^7.11.0"
-    css-loader: "npm:^6.7.1"
-    eslint: "npm:^9.4.0"
-    figma-jsonrpc: "npm:^0.4.1"
-    html-webpack-plugin: "npm:^5.5.0"
-    husky: "npm:^8.0.1"
-    lint-staged: "npm:^13.0.3"
-    prettier: "npm:^2.7.1"
-    react: "npm:^18.2.0"
-    react-dev-utils: "npm:^12.0.1"
-    react-dom: "npm:^18.2.0"
-    react-router-dom: "npm:^6.23.1"
-    style-loader: "npm:^3.3.1"
-    ts-loader: "npm:^9.3.1"
-    typescript: "npm:^5.3.2"
-    url-loader: "npm:^4.1.1"
-    webpack: "npm:^5.74.0"
-    webpack-cli: "npm:^4.10.0"
-  languageName: unknown
-  linkType: soft
-
 "interpret@npm:^2.2.0":
   version: 2.2.0
   resolution: "interpret@npm:2.2.0"
@@ -3261,6 +3225,42 @@ __metadata:
   checksum: 10c0/cd3a0b8878e7d6d3799e54340efe3591ca787d9f95f109f28129bdd2915e37807bf8918bb295ab86afb8c82196beec5a1adcaf29042ce3f2bd932b038fe3aa4b
   languageName: node
   linkType: hard
+
+"klever-instant-ut@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "klever-instant-ut@workspace:."
+  dependencies:
+    "@emotion/react": "npm:^11.11.4"
+    "@emotion/styled": "npm:^11.11.5"
+    "@figma/eslint-plugin-figma-plugins": "npm:^0.15.0"
+    "@figma/plugin-typings": "npm:^1.50.0"
+    "@mui/icons-material": "npm:^5.15.19"
+    "@mui/joy": "npm:^5.0.0-beta.36"
+    "@mui/lab": "npm:^5.0.0-alpha.170"
+    "@mui/material": "npm:^5.15.19"
+    "@types/react": "npm:^18.0.17"
+    "@types/react-dom": "npm:^18.0.6"
+    "@typescript-eslint/eslint-plugin": "npm:^7.11.0"
+    "@typescript-eslint/parser": "npm:^7.11.0"
+    css-loader: "npm:^6.7.1"
+    eslint: "npm:^9.4.0"
+    figma-jsonrpc: "npm:^0.4.1"
+    html-webpack-plugin: "npm:^5.5.0"
+    husky: "npm:^8.0.1"
+    lint-staged: "npm:^13.0.3"
+    prettier: "npm:^2.7.1"
+    react: "npm:^18.2.0"
+    react-dev-utils: "npm:^12.0.1"
+    react-dom: "npm:^18.2.0"
+    react-router-dom: "npm:^6.23.1"
+    style-loader: "npm:^3.3.1"
+    ts-loader: "npm:^9.3.1"
+    typescript: "npm:^5.3.2"
+    url-loader: "npm:^4.1.1"
+    webpack: "npm:^5.74.0"
+    webpack-cli: "npm:^4.10.0"
+  languageName: unknown
+  linkType: soft
 
 "levn@npm:^0.4.1":
   version: 0.4.1

@@ -39,16 +39,13 @@ async function generateReport(postData: PostData, modelInstance: any) {
   try {
     // set loading setLoading(true);
     figma.ui.postMessage({ type: 'loading', message: true });
-
     // 1. load font data
     await loadFonts();
-
     // 2. create report template
     const { taskFrame } = await createTaskFrameWithNameAndDesc(postData);
     console.log('taskFrame:', taskFrame);
     // send taskFrame as a reportNode to the UI
     figma.ui.postMessage({ type: 'reportNode', message: taskFrame.id });
-
     // 3. create report
     const { prompt, previewFrameId, beforeImageId, afterImageId, elemList, elementStartX, elementStartY }: any =
       await getGenerateReportPrompt(
@@ -56,9 +53,7 @@ async function generateReport(postData: PostData, modelInstance: any) {
         taskFrame.id,
         0 // round count set to "0"
       );
-
     const response = await requestAIModelAndProcessResponse(prompt, afterImageId, modelInstance);
-
     if (response.data) {
       await generateReportResult(
         response.data,
@@ -73,12 +68,32 @@ async function generateReport(postData: PostData, modelInstance: any) {
     } else {
       errorMessageHandler('Failed to get response from AI');
     }
-
     // 4. turn off loading  setLoading(false);
     figma.ui.postMessage({ type: 'loading', message: false });
-
     // 5. notify user
     figma.notify('Report generated successfully', { timeout: 3000 });
+    // 6. Get the current click count from clientStorage
+    let clickCount = await figma.clientStorage.getAsync('clickCount');
+    clickCount = clickCount ? parseInt(clickCount, 10) : 0;
+    // Increment the click count
+    clickCount += 1;
+    // Save the updated click count back to clientStorage
+    await figma.clientStorage.setAsync('clickCount', clickCount.toString());
+
+    // Notify the user on the 1st and every 10th click, or always in development mode
+    const isDevelopmentMode = process.env.NODE_ENV === 'development';
+    if (isDevelopmentMode || clickCount === 1 || clickCount % 10 === 0) {
+      figma.notify('We value your feedback! Please take a moment to participate in our survey.', {
+        button: {
+          text: 'Take Survey',
+          action: () => {
+            // Open the survey URL in the default browser
+            figma.ui.postMessage({ type: 'open-survey' });
+            return true; // Close the notification after the button is clicked
+          },
+        },
+      });
+    }
   } catch (error) {
     // turn off loading setLoading(false);
     figma.ui.postMessage({ type: 'loading', message: false });

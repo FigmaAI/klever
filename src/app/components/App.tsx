@@ -38,8 +38,9 @@ const App = () => {
     // create a task name with the current timestamp
     const demoTimestamp = new Date();
 
-    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${demoTimestamp.getMonth() + 1
-      }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
+    const taskName: string = `self_explore_${demoTimestamp.getFullYear()}-${
+      demoTimestamp.getMonth() + 1
+    }-${demoTimestamp.getDate()}_${demoTimestamp.getHours()}-${demoTimestamp.getMinutes()}-${demoTimestamp.getSeconds()}`;
 
     // personaDesc가 기본값일 경우 제외
     const postData = {
@@ -134,6 +135,10 @@ const App = () => {
       if (type === 'apiKey') {
         setApiKey(message);
         setApiKeyInput(message);
+      }
+      if (type === 'open-survey') {
+        // Open the survey URL in the default browser
+        window.open('https://forms.gle/VGpZVK1RgADCXPKU9', '_blank');
       }
     };
   }, []);
@@ -234,7 +239,7 @@ const App = () => {
         sx={{ minWidth: 480, minHeight: 240 }}
       />
       <Modal open={personaModalOpen} onClose={() => setPersonaModalOpen(false)}>
-        <ModalDialog>
+        <ModalDialog layout="fullscreen">
           <ModalClose />
           <DialogTitle>Create Persona</DialogTitle>
           <DialogContent>
@@ -288,16 +293,17 @@ const App = () => {
                   here
                 </Link>
                 . Make sure you have access to{' '}
-                <Link href="https://platform.openai.com/docs/guides/rate-limits/usage-tiers" target="_blank" rel="noopener">
+                <Link
+                  href="https://platform.openai.com/docs/guides/rate-limits/usage-tiers"
+                  target="_blank"
+                  rel="noopener"
+                >
                   GPT-4 Vision
                 </Link>
                 .
               </Typography>
             </div>
           </Alert>
-
-
-
 
           <FormControl sx={{ height: '100%' }}>
             <FormLabel>Enter your OpenAI API Key:</FormLabel>
