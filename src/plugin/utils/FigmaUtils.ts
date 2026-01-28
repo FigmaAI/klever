@@ -436,7 +436,7 @@ export async function generateReportResult(
       const previewFrame = (await figma.getNodeByIdAsync(previewFrameId)) as FrameNode;
       const beforeImage = (await figma.getNodeByIdAsync(beforeImageId)) as FrameNode;
       const res = await parseExploreRsp(
-        JSON.stringify(data),
+        data,
         previewFrame,
         elemList,
         roundCount,
@@ -587,21 +587,25 @@ function parseExploreRsp(
 function parseModelResponse(
   rsp: string
 ): { observation: string; thought: string; action: string; summary: string } | null {
-  const observationMatch = rsp.match(/Observation: ([\s\S]*?)(?:\\n\\nThought:|$)/);
-  const thoughtMatch = rsp.match(/Thought: ([\s\S]*?)(?:\\n\\nAction:|$)/);
-  const actionMatch = rsp.match(/Action: ([\s\S]*?)(?:\\n\\nSummary:|$)/);
-  const summaryMatch = rsp.match(/Summary: ([\s\S]*?)(?="$)/);
+  // Handle both raw newlines and escaped newlines (for backwards compatibility)
+  const normalizedRsp = rsp.replace(/\\n/g, '\n');
+
+  const observationMatch = normalizedRsp.match(/Observation:\s*([\s\S]*?)(?=\n\nThought:|$)/);
+  const thoughtMatch = normalizedRsp.match(/Thought:\s*([\s\S]*?)(?=\n\nAction:|$)/);
+  const actionMatch = normalizedRsp.match(/Action:\s*([\s\S]*?)(?=\n\nSummary:|$)/);
+  const summaryMatch = normalizedRsp.match(/Summary:\s*([\s\S]*?)$/);
 
   if (!observationMatch || !thoughtMatch || !actionMatch || !summaryMatch) {
     console.error('ERROR: Failed to parse the model response', rsp);
+    figma.notify('Failed to parse AI response. Please try again.', { error: true, timeout: 5000 });
     return null;
   }
 
   return {
-    observation: observationMatch[1],
-    thought: thoughtMatch[1],
-    action: actionMatch[1],
-    summary: summaryMatch[1],
+    observation: observationMatch[1].trim(),
+    thought: thoughtMatch[1].trim(),
+    action: actionMatch[1].trim(),
+    summary: summaryMatch[1].trim(),
   };
 }
 
